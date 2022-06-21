@@ -506,18 +506,30 @@ function ($scope, $rootScope, playlistService, Audio, gettextCatalog, Restangula
 		return command + ' (' + cmdScope + ')';
 	};
 
-	$scope.onMetadata = function(streamStats) {
-		//console.log('MetaData recieved: ' + streamStats.title);
-		if ((streamStats.title) && $scope.currentTrack.currentTitle !== streamStats.title) {
-			$scope.currentTrack.currentTitle = streamStats.title;
-			$scope.$apply();
+	$scope.onMetadata = function(streamTitle) {
+		console.log('MetaData recieved: ' + streamTitle);
+		if ((streamTitle) && $scope.currentTrack.currentTitle !== streamTitle) {
+			$scope.currentTrack.currentTitle = streamTitle;
 		}
 	};
 
 	$scope.getStreamTitle = function() {
 		if ($rootScope.playing) {
 			//console.log('MetaData play');
-			OCA.Music.ReadStreamMetaData($scope.currentTrack.stream_url, $scope.onMetadata, 'STREAM');
+			var currentTrackId = $scope.currentTrack.id;
+			Restangular.one('radiometadata').one('stream', $scope.currentTrack.id).get().then(
+				function(_result) {
+					if ($scope.currentTrack && $scope.currentTrack.id == currentTrackId) {
+						$scope.onMetadata(_result);
+					}
+				},
+				function(_error) {
+					// error handling
+					if ($scope.currentTrack && $scope.currentTrack.id == currentTrackId) {
+						$scope.onMetadata(_error);
+					}
+				}
+			);
 			timeoutId = setTimeout(() => $scope.getStreamTitle(), 32000);
 		} else {
 			//console.log('MetaData pause');
